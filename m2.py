@@ -138,26 +138,30 @@ if uploaded_file:
 
     st.header("5. Digital Fluorescence Conversion")
 
-    max_intensity = max(I_dbst, I_h2po4, I_pb)
+    max_intensity = int(max(I_dbst, I_h2po4, I_pb))
 
     threshold = st.slider(
         "Select Digital Threshold",
         min_value=0,
-        max_value=int(max_intensity),
-        value=int(I_dbst/2)
+        max_value=max_intensity,
+        value=int(max_intensity / 2),
+        key="digital_threshold_slider"
     )
 
+    # Digital conversion
     digital_dbst = 1 if I_dbst > threshold else 0
     digital_h2po4 = 1 if I_h2po4 > threshold else 0
     digital_pb = 1 if I_pb > threshold else 0
 
+    # Create updated table
     digital_table = pd.DataFrame({
         "System": ["DBST", "DBST + H2PO4-", "DBST + Pb2+"],
         "Intensity at λmax": [I_dbst, I_h2po4, I_pb],
         "Digital Output": [digital_dbst, digital_h2po4, digital_pb]
     })
 
-    st.table(digital_table)
+    # Display table (updates automatically)
+    st.dataframe(digital_table, use_container_width=True)
 
     # --------------------------------------------------
     # LOGIC GATE SIMULATION
@@ -167,21 +171,24 @@ if uploaded_file:
 
     st.markdown("INHIBIT Gate Model: Output = H2PO4- AND NOT(Pb2+)")
 
-    col1, col2 = st.columns(2)
+    # Single radio selector
+    logic_input = st.radio(
+        "Select Chemical Input Condition:",
+        ("None", "H2PO4- Present", "Pb2+ Present"),
+        key="logic_gate_radio"
+    )
 
-    with col1:
-        input_A = st.checkbox("H2PO4- Present")
-
-    with col2:
-        input_B = st.checkbox("Pb2+ Present")
-
-    if input_A and not input_B:
+    # Determine intensity based on selection
+    if logic_input == "H2PO4- Present":
         intensity = I_h2po4
-    elif input_B:
+
+    elif logic_input == "Pb2+ Present":
         intensity = I_pb
+
     else:
         intensity = I_dbst
 
+    # Digital output
     output = 1 if intensity > threshold else 0
 
     st.write(f"Output Intensity: {intensity:.2f}")
